@@ -1,0 +1,6 @@
+zig/zig-out/*
+zig/zig-cache/*
+zig/filesystem/*
+zig/build/*
+*.z64
+
