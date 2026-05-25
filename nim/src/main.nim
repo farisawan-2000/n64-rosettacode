@@ -1,11 +1,66 @@
+## ===============================
+## Whole lot of C glue
+## ===============================
+type
+  color_t {.bycopy.} = object
+    r, g, b, a: uint8
+  resolution_t {.byref.} = object
+    width, height, interlaced: cint
+    aspect: cfloat
+    overscan: cfloat
+
 const
   FB_COUNT* = 3
+  DFS_DEFAULT_LOCATION* = 0
+  DEPTH_16_BPP* = 0
+  GAMMA_NONE* = 0
+  FILTERS_RESAMPLE_ANTIALIAS* = 3
+  RESOLUTION_320x240: resolution_t = resolution_t(
+    width: 320, height: 240, interlaced: 0,
+  );
+
+
+proc fm_sinf(val_radians: cfloat): cfloat {.importc: "fm_sinf".}
+proc debug_init_isviewer() {.importc: "debug_init_isviewer".}
+proc debug_init_usblog() {.importc: "debug_init_usblog".}
+
+proc asset_init_compression_lvl2() {.importc: "__asset_init_compression_lvl2".}
+proc asset_init_compression_lvl3() {.importc: "__asset_init_compression_lvl3".}
+proc init_compression(level: int) =
+  case level:
+    of 0, 1: discard
+    of 2: asset_init_compression_lvl2()
+    of 3: asset_init_compression_lvl3()
+    else: discard
+
+
+
+proc dfs_init(location: cint) {.importc: "dfs_init".}
+proc display_init(
+  resolution: resolution_t,
+  depth: cint,
+  fb_count: cint,
+  gamma: cint,
+  filter: cint
+) {.importc: "display_init".}
+
+
+## ===============================
+## Now the start of the program
+## ===============================
+
+
 
 proc get_rainbow_color*(s: cfloat): color_t =
   var r: cfloat = fm_sinf(s + 0.0f) * 127.0f + 128.0f
   var g: cfloat = fm_sinf(s + 2.0f) * 127.0f + 128.0f
   var b: cfloat = fm_sinf(s + 4.0f) * 127.0f + 128.0f
-  return RGBA32(r, g, b, 255)
+  return color_t(
+    r: cast[uint8](r),
+    g: cast[uint8](g),
+    b: cast[uint8](b),
+    a: 255
+  )
 
 ##
 ##  Simple example with a 3d-model file created in blender.
@@ -15,7 +70,7 @@ proc get_rainbow_color*(s: cfloat): color_t =
 proc main*(): cint =
   debug_init_isviewer()
   debug_init_usblog()
-  asset_init_compression(2)
+  init_compression(2)
   dfs_init(DFS_DEFAULT_LOCATION)
   display_init(RESOLUTION_320x240, DEPTH_16_BPP, FB_COUNT, GAMMA_NONE,
                FILTERS_RESAMPLE_ANTIALIAS)
@@ -37,14 +92,14 @@ proc main*(): cint =
   t3d_vec3_norm(addr(lightDirVec))
   ##  Load a model-file, this contains the geometry and some metadata
   var model: ptr T3DModel = t3d_model_load("rom:/model.t3dm")
-  var rotAngle: cfloat = 0.0f
+  var rotAngle: float = 0.0f
   var dplDraw: ptr rspq_block_t = nil
   var frameIdx: cint = 0
   while true:
     ##  ======== Update ======== //
     ##  cycle through FP matrices to avoid overwriting what the RSP may still need to load
     frameIdx = (frameIdx + 1) mod FB_COUNT
-    dec(rotAngle, 0.02f)
+    rotAngle -= 0.02f
     var modelScale: cfloat = 0.1f
     t3d_viewport_set_projection(addr(viewport), T3D_DEG_TO_RAD(85.0f), 10.0f,
                                 150.0f)

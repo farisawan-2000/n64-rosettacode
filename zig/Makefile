@@ -3,9 +3,6 @@ default: all
 .PHONY: all clean
 
 BUILD_DIR = build
-N64_OBJDUMP = /opt/crashsdk/bin/mips-n64-objdump
-# N64_INST = /opt/crashsdk
-# include libdragon-unstable/n64.mk
 
 # We installed this on arch linux
 T3D_INST=/usr/include
@@ -65,7 +62,7 @@ $(BUILD_DIR)/%.o: %.zig | $(BUILD_DIR)/
 	              -fomit-frame-pointer
 	$(CC) -c $(CFLAGS) $(NO_WARNINGS) -I /usr/lib/zig/ -o $@ $@.c
 
-$(ROM): N64_ROM_TITLE = "Credits"
+$(ROM): N64_ROM_TITLE = "01_model"
 $(ROM): $(BUILD_DIR)/game.dfs
 
 $(BUILD_DIR)/game.dfs: $(wildcard filesystem/*) $(ASSET_CONV)

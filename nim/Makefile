@@ -22,11 +22,11 @@ $(BUILD_DIR)/:
 DUMMY != mkdir -p $(BUILD_DIR)/src
 
 C_SRCS := $(wildcard src/*.c)
-ZIG_SRCS := $(wildcard src/*.zig)
+NIM_SRCS := $(wildcard src/*.nim)
 
-OBJS := $(C_SRCS:%.c=$(BUILD_DIR)/%.o) $(ZIG_SRCS:%.zig=$(BUILD_DIR)/%.o)
+OBJS := $(C_SRCS:%.c=$(BUILD_DIR)/%.o) $(NIM_SRCS:%.nim=$(BUILD_DIR)/%.o)
 
-ZIG_INCLUDES += -I/usr/mips64-elf/include/ -Isrc/ -I.
+nim_INCLUDES += -I/usr/mips64-elf/include/ -Isrc/ -I.
 
 NO_WARNINGS := -Wno-unused-const-variable -Wno-incompatible-pointer-types -Wno-unused-but-set-variable -Wno-main -Wno-return-type \
                -Wno-unused-function -Wno-unused-variable
@@ -55,16 +55,13 @@ filesystem/%.t3dm: assets/%.glb
 	$(T3D_GLTF_TO_3D) "$<" $@
 	$(N64_BINDIR)/mkasset -c 2 -w 256 -o filesystem $@
 
-# Compile Zig code
-$(BUILD_DIR)/%.o: %.zig | $(BUILD_DIR)/
-	@echo "    [ZIG] $@"
-	zig-0.15 build-obj $< \
-	              -target mips-freestanding-gnu -mcpu=mips2 -lc -D__MIPSEB__ -Dwint_t=long \
-	              $(ZIG_INCLUDES) -ofmt=c -femit-bin=$@.c \
-	              -fomit-frame-pointer
-	$(CC) -c $(CFLAGS) $(NO_WARNINGS) -I /usr/lib/zig/ -o $@ $@.c
+# Compile nim code
+$(BUILD_DIR)/%.o: %.nim | $(BUILD_DIR)/
+	@echo "    [nim] $@"
+	nim c $<
+	$(CC) -c $(CFLAGS) $(NO_WARNINGS) -o $@ $@.c
 
-$(ROM): N64_ROM_TITLE = "Credits"
+$(ROM): N64_ROM_TITLE = "01_model"
 $(ROM): $(BUILD_DIR)/game.dfs
 
 $(BUILD_DIR)/game.dfs: $(wildcard filesystem/*) $(ASSET_CONV)
@@ -73,9 +70,6 @@ $(BUILD_DIR)/game.elf: $(OBJS) | $(BUILD_DIR)/
 clean:
 	@echo "    [CLEAN] build/"
 	rm -rf $(BUILD_DIR)/
-
-libs:
-	$(MAKE) -C libdragon-unstable/
 
 test: $(ROM)
 	ares $<
