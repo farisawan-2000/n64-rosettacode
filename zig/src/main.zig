@@ -29,10 +29,8 @@ const rdpq = @cImport({
     @cInclude("libdragon.h");
 });
 
-const game = @import("level_allocator.zig");
 const log = @import("logging.zig");
 const assets = @import("assets.zig");
-const math = @import("math.zig");
 
 const rspq = @import("./libdragon/rspq.zig");
 
