@@ -2,14 +2,20 @@
 ## Whole lot of C glue
 ## ===============================
 import t3d
+import t3dmath
 
-type
-  color_t {.bycopy.} = object
+type color_t {.bycopy.} = object
     r, g, b, a: uint8
-  resolution_t {.bycopy.} = object
+type resolution_t {.bycopy.} = object
     width, height, interlaced: cint
     aspect: cfloat
     overscan: cfloat
+
+type T3DModel {.incompleteStruct.} = object
+  placeholder: int
+
+type rspq_block_t = object
+  placeholder: int
 
 const
   FB_COUNT* = 3
@@ -25,6 +31,7 @@ const
 proc fm_sinf(val_radians: cfloat): cfloat {.importc: "fm_sinf".}
 proc debug_init_isviewer() {.importc: "debug_init_isviewer".}
 proc debug_init_usblog() {.importc: "debug_init_usblog".}
+proc t3d_init(params: T3DInitParams) {.importc: "t3d_init".}
 
 proc asset_init_compression_lvl2() {.importc: "__asset_init_compression_lvl2".}
 proc asset_init_compression_lvl3() {.importc: "__asset_init_compression_lvl3".}
@@ -49,6 +56,8 @@ proc display_init(
 proc rdpq_init() {.importc: "rdpq_init".}
 proc malloc_uncached(size: csize_t): ptr {.importc: "malloc_uncached".}
 proc free_uncached(pr: ptr) {.importc: "free_uncached".}
+
+proc t3d_model_load(model: string): ptr T3DModel {.importc: "t3d_model_load".}
 
 ## ===============================
 ## Now the start of the program
@@ -84,16 +93,16 @@ proc main*(): cint =
   ##  Now allocate a fixed-point matrix, this is what t3d uses internally.
   ##  Note: this gets DMA'd to the RSP, so it needs to be uncached.
   ##  If you can't allocate uncached memory, remember to flush the cache after writing to it instead.
-  var modelMatFP: ptr T3DMat4FP = cast[ptr T3DMat4FP](malloc_uncached(sizeof(T3DMat4FP) * FB_COUNT))
+  var modelMatFP: seq[t3dmath.T3DMat4FP] = cast[seq[t3dmath.T3DMat4FP]](malloc_uncached(sizeof(t3dmath.T3DMat4FP) * FB_COUNT))
   ##  allocate one matrix for each framebuffer
   ##  Also create a buffered viewport to have a distinct matrix for each frame, avoiding corruptions if the CPU is too fast
   ##  In an actual game make sure to free this viewport via 't3d_viewport_destroy' if no longer needed.
   var viewport: T3DViewport = t3d_viewport_create_buffered(FB_COUNT)
-  let camPos: T3DVec3 = [[0, 10.0f, 40.0f]]
-  let camTarget: T3DVec3 = [[0, 0, 0]]
-  var colorAmbient: array[4, uint8_t] = [80, 80, 100, 0xFF]
-  var colorDir: array[4, uint8_t] = [0xEE, 0xAA, 0xAA, 0xFF]
-  var lightDirVec: T3DVec3 = [[-1.0f, 1.0f, 1.0f]]
+  let camPos: T3DVec3 = [0.0, 10.0, 40.0]
+  let camTarget: T3DVec3 = [0, 0, 0]
+  var colorAmbient: array[4, uint8] = [80, 80, 100, 0xFF]
+  var colorDir: array[4, uint8] = [0xEE, 0xAA, 0xAA, 0xFF]
+  var lightDirVec: T3DVec3 = [-1.0, 1.0, 1.0]
   t3d_vec3_norm(addr(lightDirVec))
   ##  Load a model-file, this contains the geometry and some metadata
   var model: ptr T3DModel = t3d_model_load("rom:/model.t3dm")
@@ -105,17 +114,23 @@ proc main*(): cint =
     ##  cycle through FP matrices to avoid overwriting what the RSP may still need to load
     frameIdx = (frameIdx + 1) mod FB_COUNT
     rotAngle -= 0.02f
-    var modelScale: cfloat = 0.1f
+    var modelScale: float = 0.1
     t3d_viewport_set_projection(addr(viewport), T3D_DEG_TO_RAD(85.0f), 10.0f,
                                 150.0f)
+
+    var upvec: T3DVec3 = [0, 1, 0]
     t3d_viewport_look_at(addr(viewport), addr(camPos), addr(camTarget),
-                         addr((T3DVec3)), ([0, 1, 0],))
+                         addr(upvec))
     ##  slowly rotate model, for more information on matrices and how to draw objects
     ##  see the example: "03_objects"
-    t3d_mat4fp_from_srt_euler(addr(modelMatFP[frameIdx]), (float[3]),
-                              (modelScale, modelScale, modelScale), (float[3]),
-                              (0.0f, rotAngle * 0.2f, rotAngle), (float[3]),
-                              (0, 0, 0))
+    
+    var modscale: T3DVec3 = [modelScale, modelScale, modelScale]
+    var modrot: T3DVec3 = [0.0, rotAngle * 0.2, rotAngle]
+    var modpos: T3DVec3 = [0, 0, 0]
+    t3d_mat4fp_from_srt_euler(addr(modelMatFP[frameIdx]),
+                              addr(modscale),
+                              addr(modrot),
+                              addr(modpos))
     ##  ======== Draw ======== //
     rdpq_attach(display_get(), display_get_zbuf())
     t3d_frame_start()

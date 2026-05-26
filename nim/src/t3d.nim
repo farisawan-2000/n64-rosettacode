@@ -17,8 +17,8 @@ type
 proc malloc_uncached(size: csize_t): ptr {.importc: "malloc_uncached".}
 proc free_uncached(pt: ptr) {.importc: "free_uncached".}
 
-proc PhysicalAddr(addy: pointer): pointer =
-  return addy and 0x1FFF_FFFFu32
+# proc PhysicalAddr(addy: pointer): pointer =
+#   return addy and 0x1FFF_FFFFu32
 
 
 ##  RSP commands, must match with the commands defined in `rsp/rsp_tiny3d.rspl`
@@ -170,18 +170,18 @@ proc t3d_init(params: T3DInitParams) {.importc: "t3d_init".}
 ##  @brief Destroys the tiny3d library
 ##
 
-proc t3d_destroy*()
+proc t3d_destroy*() {.importc: "t3d_destroy".}
 ##
 ##  @brief Starts a new frame, this will setup some default states
 ##
 
-proc t3d_frame_start*()
+proc t3d_frame_start*() {.importc: "t3d_frame_start".}
 ##  @brief Clears the entire screen with a given color
 
-proc t3d_screen_clear_color*(color: color_t)
+proc t3d_screen_clear_color*(color: color_t) {.importc: "t3d_screen_clear_color".}
 ##  @brief Clears the entire depth buffer with a fixed value (0xFFFC)
 
-proc t3d_screen_clear_depth*()
+proc t3d_screen_clear_depth*() {.importc: "t3d_screen_clear_depth".}
 ##
 ##  NOTE: This function is a stub and does nothing for now!
 ##
@@ -190,7 +190,7 @@ proc t3d_screen_clear_depth*()
 ##  @deprecated DO NOT USE
 ##
 
-proc t3d_metrics_fetch*(data: ptr T3DMetrics)
+proc t3d_metrics_fetch*(data: ptr T3DMetrics) {.importc: "t3d_metrics_fetch".}
 ##
 ##  Creates a viewport struct, this only creates a struct and doesn't change any setting.
 ##  Most likely you want to update the camera and projection matrix over time,
@@ -250,13 +250,13 @@ proc t3d_viewport_destroy*(viewport: ptr T3DViewport) {.inline.} =
 ##  @param viewport viewport, pointer must be valid until the next `t3d_viewport_attach` call
 ##
 
-proc t3d_viewport_attach*(viewport: ptr T3DViewport)
+proc t3d_viewport_attach*(viewport: ptr T3DViewport) {.importc: "t3d_viewport_attach".}
 ##
 ##  Returns the currently attached viewport.
 ##  @return viewport or NULL if none is attached
 ##
 
-proc t3d_viewport_get*(): ptr T3DViewport
+proc t3d_viewport_get*(): ptr T3DViewport {.importc: "t3d_viewport_get".}
 ##
 ##  Convenience function to set the area of a viewport.
 ##  @param viewport
@@ -284,8 +284,7 @@ proc t3d_viewport_set_area*(viewport: ptr T3DViewport; x: int32; y: int32;
 ##  @param far far plane distance (should be >=40 to avoid depth-precision issues)
 ##
 
-proc t3d_viewport_set_perspective*(viewport: ptr T3DViewport; fov: cfloat;
-                                  aspectRatio: cfloat; near: cfloat; far: cfloat)
+proc t3d_viewport_set_perspective*(viewport: ptr T3DViewport; fov: cfloat; aspectRatio: cfloat; near: cfloat; far: cfloat) {.importc: "t3d_viewport_set_perspective".}
 ##
 ##  Updates the projection matrix of the given viewport.
 ##  The proj. matrix gets auto. applied at the next `t3d_viewport_attach` call.
@@ -298,8 +297,7 @@ proc t3d_viewport_set_perspective*(viewport: ptr T3DViewport; fov: cfloat;
 ##  @param far far plane distance (should be >=40 to avoid depth-precision issues)
 ##
 
-proc t3d_viewport_set_projection*(viewport: ptr T3DViewport; fov: cfloat;
-                                 near: cfloat; far: cfloat)
+proc t3d_viewport_set_projection*(viewport: ptr T3DViewport; fov: cfloat; near: cfloat; far: cfloat) {.importc: "t3d_viewport_set_projection".}
 ##
 ##  Sets an orthographic projection matrix for the given viewport.
 ##  The matrix gets auto. applied at the next `t3d_viewport_attach` call.
@@ -312,8 +310,7 @@ proc t3d_viewport_set_projection*(viewport: ptr T3DViewport; fov: cfloat;
 ##  @param far far plane distance (should be >=40 to avoid depth-precision issues)
 ##
 
-proc t3d_viewport_set_ortho*(viewport: ptr T3DViewport; left: cfloat; right: cfloat;
-                            bottom: cfloat; top: cfloat; near: cfloat; far: cfloat)
+proc t3d_viewport_set_ortho*(viewport: ptr T3DViewport; left: cfloat; right: cfloat; bottom: cfloat; top: cfloat; near: cfloat; far: cfloat) {.importc: "t3d_viewport_set_ortho".}
 ##
 ##  Sets the normalization factor for W in the ucode.
 ##  NOTE: this gets called automatically by `t3d_viewport_set_projection`.
@@ -337,8 +334,7 @@ proc t3d_viewport_set_w_normalize*(viewport: ptr T3DViewport; near: cfloat;
 ##  @param up camera up vector, expected to be {0,1,0} by default
 ##
 
-proc t3d_viewport_look_at*(viewport: ptr T3DViewport; eye: ptr T3DVec3;
-                          target: ptr T3DVec3; up: ptr T3DVec3)
+proc t3d_viewport_look_at*(viewport: ptr T3DViewport; eye: ptr T3DVec3; target: ptr T3DVec3; up: ptr T3DVec3) {.importc: "t3d_viewport_look_at".}
 ##
 ##  Sets a new view (aka camera) matrix for the given viewport.
 ##  If you have a look-at based camera prefer using 't3d_viewport_look_at'.
@@ -347,7 +343,7 @@ proc t3d_viewport_look_at*(viewport: ptr T3DViewport; eye: ptr T3DVec3;
 ##  @param mat new view matrix
 ##
 
-proc t3d_viewport_set_view_matrix*(viewport: ptr T3DViewport; mat: ptr T3DMat4)
+proc t3d_viewport_set_view_matrix*(viewport: ptr T3DViewport; mat: ptr T3DMat4) {.importc: "t3d_viewport_set_view_matrix".}
 ##
 ##  Sets a new projection matrix for the given viewport.
 ##  If you have a perspective or orthographic projection prefer using
@@ -357,7 +353,7 @@ proc t3d_viewport_set_view_matrix*(viewport: ptr T3DViewport; mat: ptr T3DMat4)
 ##  @param mat new projection matrix
 ##
 
-proc t3d_viewport_set_projection_matrix*(viewport: ptr T3DViewport; mat: ptr T3DMat4)
+proc t3d_viewport_set_projection_matrix*(viewport: ptr T3DViewport; mat: ptr T3DMat4) {.importc: "t3d_viewport_set_projection_matrix".}
 ##
 ##  Calculates the view-space position of a given world-space position.
 ##  This will also handle offset viewports (e.g. for splitscreens)
@@ -367,8 +363,7 @@ proc t3d_viewport_set_projection_matrix*(viewport: ptr T3DViewport; mat: ptr T3D
 ##  @param pos input world-space position
 ##
 
-proc t3d_viewport_calc_viewspace_pos*(viewport: ptr T3DViewport; `out`: ptr T3DVec3;
-                                     pos: ptr T3DVec3)
+proc t3d_viewport_calc_viewspace_pos*(viewport: ptr T3DViewport; `out`: ptr T3DVec3; pos: ptr T3DVec3) {.importc: "t3d_viewport_calc_viewspace_pos".}
 ##
 ##  @brief Draws a single triangle, referencing loaded vertices
 ##  @param v0 vertex index 0
@@ -376,7 +371,7 @@ proc t3d_viewport_calc_viewspace_pos*(viewport: ptr T3DViewport; `out`: ptr T3DV
 ##  @param v2 vertex index 2
 ##
 
-proc t3d_tri_draw*(v0: uint32; v1: uint32; v2: uint32)
+proc t3d_tri_draw*(v0: uint32; v1: uint32; v2: uint32) {.importc: "t3d_tri_draw".}
 ##
 ##  Draws multiple triangles, assuming sequential indices.
 ##  For example with baseIndex=4 and triCount=2, we would get
@@ -389,7 +384,7 @@ proc t3d_tri_draw*(v0: uint32; v1: uint32; v2: uint32)
 ##  @param triCount amount of triangles to draw
 ##
 
-proc t3d_tri_draw_unindexed*(baseIndex: uint32; triCount: uint32)
+proc t3d_tri_draw_unindexed*(baseIndex: uint32; triCount: uint32) {.importc: "t3d_tri_draw_unindexed".}
 ##
 ##  Draws multiple quads, assuming sequential indices.
 ##  For example with baseIndex=4 and quadCount=2, we would get
@@ -402,7 +397,7 @@ proc t3d_tri_draw_unindexed*(baseIndex: uint32; triCount: uint32)
 ##  @param triCount amount of quads to draw
 ##
 
-proc t3d_quad_draw_unindexed*(baseIndex: uint32; quadCount: uint32)
+proc t3d_quad_draw_unindexed*(baseIndex: uint32; quadCount: uint32) {.importc: "t3d_quad_draw_unindexed".}
 ##
 ##  Draws a strip of triangles by loading an index buffer.
 ##  Note that this data must be in an internal format, so use 't3d_indexbuffer_convert' to convert it first.
@@ -422,16 +417,16 @@ proc t3d_quad_draw_unindexed*(baseIndex: uint32; quadCount: uint32)
 ##  @param count amount of indices to load
 ##
 
-proc t3d_tri_draw_strip*(indexBuff: ptr int16; count: cint)
+proc t3d_tri_draw_strip*(indexBuff: ptr int16; count: cint) {.importc: "t3d_tri_draw_strip".}
 ##
 ##  Combined `t3d_tri_draw_strip` + `t3d_tri_sync`.
-##  See individual functions for more details.
+##  See in/idual functions for more details.
 ##
 ##  @param indexBuff index buffer to load
 ##  @param count amount of indices to load
 ##
 
-proc t3d_tri_draw_strip_and_sync*(indexBuff: ptr int16; count: cint)
+proc t3d_tri_draw_strip_and_sync*(indexBuff: ptr int16; count: cint) {.importc: "t3d_tri_draw_strip_and_sync".}
 ##
 ##  Syncs pending triangles.
 ##  This needs to be called after triangles where drawn and a different overlay
@@ -451,19 +446,19 @@ proc t3d_tri_draw_strip_and_sync*(indexBuff: ptr int16; count: cint)
 ##  @param doMultiply if true, the matrix will be multiplied with the previous stack entry
 ##
 
-proc t3d_matrix_set*(mat: ptr T3DMat4FP; doMultiply: bool)
+proc t3d_matrix_set*(mat: ptr T3DMat4FP; doMultiply: bool) {.importc: "t3d_matrix_set".}
 ##
 ##  Multiplies a matrix with the current stack position, then pushes it onto the stack.
 ##  @param mat address to load matrix from
 ##
 
-proc t3d_matrix_push*(mat: ptr T3DMat4FP)
+proc t3d_matrix_push*(mat: ptr T3DMat4FP) {.importc: "t3d_matrix_push".}
 ##
 ##  Pops the current matrix from the stack.
 ##  @param count how many matrices to pop
 ##
 
-proc t3d_matrix_pop*(count: cint)
+proc t3d_matrix_pop*(count: cint) {.importc: "t3d_matrix_pop".}
 ##
 ##  Moves the stack pos. without changing a matrix or causing re-calculations.
 ##  This should only be used in preparation for 't3d_matrix_set' calls.
@@ -477,13 +472,13 @@ proc t3d_matrix_pop*(count: cint)
 ##  @param count relative change (matrix count), should usually be 1
 ##
 
-proc t3d_matrix_push_pos*(count: cint)
+proc t3d_matrix_push_pos*(count: cint) {.importc: "t3d_matrix_push_pos".}
 ##
 ##  Sets the projection matrix, this is stored outside of the matrix stack.
 ##  @param mat address to load matrix from
 ##
 
-proc t3d_matrix_set_proj*(mat: ptr T3DMat4FP)
+proc t3d_matrix_set_proj*(mat: ptr T3DMat4FP) {.importc: "t3d_matrix_set_proj".}
 ##
 ##  Loads a vertex buffer with a given size, this can then be used to draw triangles.
 ##
@@ -492,7 +487,7 @@ proc t3d_matrix_set_proj*(mat: ptr T3DMat4FP)
 ##  @param count how many vertices to load (1-70)
 ##
 
-proc t3d_vert_load*(vertices: ptr T3DVertPacked; offset: uint32; count: uint32)
+proc t3d_vert_load*(vertices: ptr T3DVertPacked; offset: uint32; count: uint32) {.importc: "t3d_vert_load".}
 ##
 ##  Sets the global ambient light color.
 ##  This color is always active and applied to all objects.
@@ -500,7 +495,7 @@ proc t3d_vert_load*(vertices: ptr T3DVertPacked; offset: uint32; count: uint32)
 ##  @param color color in RGBA8 format
 ##
 
-proc t3d_light_set_ambient*(color: ptr uint8)
+proc t3d_light_set_ambient*(color: ptr uint8) {.importc: "t3d_light_set_ambient".}
 ##
 ##  Sets a directional light.
 ##  You can set up to 7 directional lights, the amount can be set with 't3d_light_set_count'.
@@ -511,7 +506,7 @@ proc t3d_light_set_ambient*(color: ptr uint8)
 ##  @param dir direction vector
 ##
 
-proc t3d_light_set_directional*(index: cint; color: ptr uint8; dir: ptr T3DVec3)
+proc t3d_light_set_directional*(index: cint; color: ptr uint8; dir: ptr T3DVec3) {.importc: "t3d_light_set_directional".}
 ##
 ##  Sets a point light.
 ##  You can set up to 7 point lights, the amount can be set with 't3d_light_set_count'.
@@ -530,15 +525,14 @@ proc t3d_light_set_directional*(index: cint; color: ptr uint8; dir: ptr T3DVec3)
 ##  @param ignoreNormals if true, the light will only check the distance, not the angle (useful for cutouts)
 ##
 
-proc t3d_light_set_point*(index: cint; color: ptr uint8; pos: ptr T3DVec3;
-                         size: cfloat; ignoreNormals: bool)
+proc t3d_light_set_point*(index: cint; color: ptr uint8; pos: ptr T3DVec3; size: cfloat; ignoreNormals: bool) {.importc: "t3d_light_set_point".}
 ##
 ##  Sets the amount of active lights (excl. ambient light).
 ##  Note that the ambient light does not count towards this limit and is always applied.
 ##  @param count amount of lights (0-6)
 ##
 
-proc t3d_light_set_count*(count: cint)
+proc t3d_light_set_count*(count: cint) {.importc: "t3d_light_set_count".}
 ##
 ##  Sets the final color exposure.
 ##  This will be applied to the combined light + vertex color as a simple scaling factor.
@@ -550,7 +544,7 @@ proc t3d_light_set_count*(count: cint)
 ##  @param exposure factor, 1.0 by default
 ##
 
-proc t3d_light_set_exposure*(exposure: cfloat)
+proc t3d_light_set_exposure*(exposure: cfloat) {.importc: "t3d_light_set_exposure".}
 ##
 ##  Sets the range of the fog.
 ##  To disable fog, use 't3d_fog_disable' or set 'near' and 'far' to 0.
@@ -560,7 +554,7 @@ proc t3d_light_set_exposure*(exposure: cfloat)
 ##  @param far end of the fog effect
 ##
 
-proc t3d_fog_set_range*(near: cfloat; far: cfloat)
+proc t3d_fog_set_range*(near: cfloat; far: cfloat) {.importc: "t3d_fog_set_range".}
 ##
 ##  Enables or disables fog, this can be set independently from the range.
 ##  @param isEnabled
@@ -578,13 +572,13 @@ proc t3d_fog_set_range*(near: cfloat; far: cfloat)
 ##  @return packed normal
 ##
 
-proc t3d_vert_pack_normal*(normal: ptr T3DVec3): uint16
+proc t3d_vert_pack_normal*(normal: ptr T3DVec3): uint16 {.importc: "t3d_vert_pack_normal".}
 ##
 ##  Sets various draw flags, this will affect how triangles are drawn.
 ##  @param drawFlags
 ##
 
-proc t3d_state_set_drawflags*(drawFlags: T3DDrawFlags)
+proc t3d_state_set_drawflags*(drawFlags: T3DDrawFlags) {.importc: "t3d_state_set_drawflags".}
 ##
 ##  Offsets the final screen-space depth by a fixed amount.
 ##  This can be used as an alternative to decals by drawing normally with an offset instead.
@@ -593,7 +587,7 @@ proc t3d_state_set_drawflags*(drawFlags: T3DDrawFlags)
 ##  @param offset relative offset, negative value to pull depth closer. Pass '0' to reset.
 ##
 
-proc t3d_state_set_depth_offset*(offset: int16)
+proc t3d_state_set_depth_offset*(offset: int16) {.importc: "t3d_state_set_depth_offset".}
 ##
 ##  Enables or disables the alpha-to-tile feature.
 ##  This will cause the 3 MSBs of the input vertex alpha to be stored as the base tile.
@@ -612,7 +606,7 @@ proc t3d_state_set_depth_offset*(offset: int16)
 ##  @param enable true to enable for future vertex loads, false to disable.
 ##
 
-proc t3d_state_set_alpha_to_tile*(enable: bool)
+proc t3d_state_set_alpha_to_tile*(enable: bool) {.importc: "t3d_state_set_alpha_to_tile".}
 ##
 ##  Sets a function for vertex effects.
 ##  To disable it, set the function to 'T3D_VERTEX_FX_NONE'.
@@ -631,7 +625,7 @@ proc t3d_state_set_alpha_to_tile*(enable: bool)
 ##  @param arg1 second argument
 ##
 
-proc t3d_state_set_vertex_fx*(`func`: T3DVertexFX; arg0: int16; arg1: int16)
+proc t3d_state_set_vertex_fx*(`func`: T3DVertexFX; arg0: int16; arg1: int16) {.importc: "t3d_state_set_vertex_fx".}
 ##
 ##  Overrides the scale factor for some vertex effects.
 ##  This is currently only used by the 'T3D_VERTEX_FX_SPHERICAL_UV' function
@@ -641,7 +635,7 @@ proc t3d_state_set_vertex_fx*(`func`: T3DVertexFX; arg0: int16; arg1: int16)
 ##  @param scale scale factor
 ##
 
-proc t3d_state_set_vertex_fx_scale*(scale: uint16)
+proc t3d_state_set_vertex_fx_scale*(scale: uint16) {.importc: "t3d_state_set_vertex_fx_scale".}
 ##
 ##  Changes the way lighting is combined with vertex color in the ucode.
 ##  Each light source is always added together to form the total light intensity per vertex.
@@ -664,7 +658,7 @@ proc t3d_state_set_vertex_fx_scale*(scale: uint16)
 ##  @param mode additive or multiplicative lighting, multiplicative by default
 ##
 
-proc t3d_state_set_lighting_mode*(mode: T3DLightingMode)
+proc t3d_state_set_lighting_mode*(mode: T3DLightingMode) {.importc: "t3d_state_set_lighting_mode".}
 ##
 ##  Sets a new address in the segment table.
 ##  This acts as a base-address for addresses in matrices/vertices
@@ -674,7 +668,7 @@ proc t3d_state_set_lighting_mode*(mode: T3DLightingMode)
 ##  @param address base RDRAM address
 ##
 
-proc t3d_segment_set*(segmentId: uint8; address: pointer)
+proc t3d_segment_set*(segmentId: uint8; address: pointer) {.importc: "t3d_segment_set".}
 ##
 ##  Creates a dummy address to be used for vertex/matrix loads.
 ##  This will cause the address in the segment table to be used instead.
@@ -696,8 +690,8 @@ proc t3d_segment_placeholder*(segmentId: uint8): pointer {.inline.} =
 ##  @return segmented address
 ##
 
-proc t3d_segment_address*(segmentId: uint8; `ptr`: pointer): pointer {.inline.} =
-  return cast[pointer]((PhysicalAddr(`ptr`) or (segmentId shl (8 * 3 + 2))))
+# proc t3d_segment_address*(segmentId: uint8; `ptr`: pointer): pointer {.inline.} =
+#   return cast[pointer]((PhysicalAddr(`ptr`) or (segmentId shl (8 * 3 + 2))))
 
 ##  Index-buffer helpers:
 ##
@@ -723,7 +717,7 @@ proc t3d_segment_address*(segmentId: uint8; `ptr`: pointer): pointer {.inline.} 
 ##  @param count index count
 ##
 
-proc t3d_indexbuffer_convert*(indices: ptr int16; count: cint)
+proc t3d_indexbuffer_convert*(indices: ptr int16; count: cint) {.importc: "t3d_indexbuffer_convert".}
 ##  Vertex-buffer helpers:
 ##
 ##  Returns the pointer to a position of a vertex in a buffer
@@ -731,8 +725,8 @@ proc t3d_indexbuffer_convert*(indices: ptr int16; count: cint)
 ##  @param idx vertex index
 ##
 
-proc t3d_vertbuffer_get_pos*(vert: ptr T3DVertPacked; idx: cint): ptr int16 {.inline.} =
-  return if (idx and 1): vert[idx div 2].posB else: vert[idx div 2].posA
+# proc t3d_vertbuffer_get_pos*(vert: seq[T3DVertPacked]; idx: cint): ptr int16 {.inline.} =
+#   return if ((idx and 1) == 1): vert[idx div 2].posB else: vert[idx div 2].posA
 
 ##
 ##  Returns the pointer to the UV of a vertex in a buffer
@@ -740,8 +734,8 @@ proc t3d_vertbuffer_get_pos*(vert: ptr T3DVertPacked; idx: cint): ptr int16 {.in
 ##  @param idx vertex index
 ##
 
-proc t3d_vertbuffer_get_uv*(vert: ptr T3DVertPacked; idx: cint): ptr int16 {.inline.} =
-  return if (idx and 1): vert[idx div 2].stB else: vert[idx div 2].stA
+# proc t3d_vertbuffer_get_uv*(vert: ptr T3DVertPacked; idx: cint): ptr int16 {.inline.} =
+#   return if ((idx and 1) == 1): vert[idx div 2].stB else: vert[idx div 2].stA
 
 ##
 ##  Returns the pointer to the color (as a u32) of a vertex in a buffer
@@ -749,9 +743,9 @@ proc t3d_vertbuffer_get_uv*(vert: ptr T3DVertPacked; idx: cint): ptr int16 {.inl
 ##  @param idx vertex index
 ##
 
-proc t3d_vertbuffer_get_color*(vert: ptr T3DVertPacked; idx: cint): ptr uint32 {.
-    inline.} =
-  return if (idx and 1): addr(vert[idx div 2].rgbaB) else: addr(vert[idx div 2].rgbaA)
+# proc t3d_vertbuffer_get_color*(vert: ptr T3DVertPacked; idx: cint): ptr uint32 {.
+#     inline.} =
+#   return if ((idx and 1) == 1): addr(vert[idx div 2].rgbaB) else: addr(vert[idx div 2].rgbaA)
 
 ##
 ##  Returns the pointer to the color (as a u8[4]) of a vertex in a buffer
@@ -759,9 +753,9 @@ proc t3d_vertbuffer_get_color*(vert: ptr T3DVertPacked; idx: cint): ptr uint32 {
 ##  @param idx vertex index
 ##
 
-proc t3d_vertbuffer_get_rgba*(vert: ptr T3DVertPacked; idx: cint): ptr uint8 {.inline.} =
-  return if (idx and 1): cast[ptr uint8](addr(vert[idx div 2].rgbaB)) else: cast[ptr uint8](addr(vert[
-      idx div 2].rgbaA))
+# proc t3d_vertbuffer_get_rgba*(vert: ptr T3DVertPacked; idx: cint): ptr uint8 {.inline.} =
+#   return if ((idx and 1) == 1): cast[ptr uint8](addr(vert[idx div 2].rgbaB)) else: cast[ptr uint8](addr(vert[
+#       idx div 2].rgbaA))
 
 ##
 ##  Returns the pointer to the packed normal of a vertex in a buffer
@@ -769,7 +763,7 @@ proc t3d_vertbuffer_get_rgba*(vert: ptr T3DVertPacked; idx: cint): ptr uint8 {.i
 ##  @param idx vertex index
 ##
 
-proc t3d_vertbuffer_get_norm*(vert: ptr T3DVertPacked; idx: cint): ptr uint16 {.inline.} =
-  return if (idx and 1): addr(vert[idx div 2].normB) else: addr(vert[idx div 2].normA)
+# proc t3d_vertbuffer_get_norm*(vert: ptr T3DVertPacked; idx: cint): ptr uint16 {.inline.} =
+#   return if ((idx and 1) == 1): addr(vert[idx div 2].normB) else: addr(vert[idx div 2].normA)
 
 ##  C++ wrappers that allow (const-)references to be passed instead of pointers
