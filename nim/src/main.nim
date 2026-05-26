@@ -48,6 +48,7 @@ proc display_init(
 
 proc rdpq_init() {.importc: "rdpq_init".}
 proc malloc_uncached(size: csize_t): ptr {.importc: "malloc_uncached".}
+proc free_uncached(pr: ptr) {.importc: "free_uncached".}
 
 ## ===============================
 ## Now the start of the program

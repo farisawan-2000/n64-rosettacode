@@ -15,6 +15,11 @@ type
     r, g, b, a: uint8
 
 proc malloc_uncached(size: csize_t): ptr {.importc: "malloc_uncached".}
+proc free_uncached(pt: ptr) {.importc: "free_uncached".}
+
+proc PhysicalAddr(addy: pointer): pointer =
+  return addy and 0x1FFF_FFFFu32
+
 
 ##  RSP commands, must match with the commands defined in `rsp/rsp_tiny3d.rspl`
 
@@ -216,7 +221,7 @@ proc t3d_viewport_create_buffered*(count: uint16): T3DViewport {.inline.} =
   var vp: T3DViewport = t3d_viewport_create()
   vp.bufferCount = count
   vp.bufferIdx = 0
-  vp.matFP = cast[ptr T3DMat4FP](malloc_uncached(sizeof((T3DMat4FP) * 2 * count)))
+  vp.matFP = cast[ptr T3DMat4FP](malloc_uncached(sizeof(T3DMat4FP) * 2 * count))
   return vp
 
 ##
@@ -229,7 +234,7 @@ proc t3d_viewport_create_buffered*(count: uint16): T3DViewport {.inline.} =
 ##
 
 proc t3d_viewport_destroy*(viewport: ptr T3DViewport) {.inline.} =
-  if viewport.matFP:
+  if viewport.matFP != nil:
     free_uncached(viewport.matFP)
     viewport.matFP = nil
     viewport.bufferCount = 0
@@ -321,7 +326,7 @@ proc t3d_viewport_set_ortho*(viewport: ptr T3DViewport; left: cfloat; right: cfl
 
 proc t3d_viewport_set_w_normalize*(viewport: ptr T3DViewport; near: cfloat;
                                   far: cfloat) {.inline.} =
-  viewport.normScaleW = 2.0f div (far + near)
+  viewport.normScaleW = 2.0f / (far + near)
 
 ##
 ##  Sets a new camera position and direction for the given viewport.
@@ -433,8 +438,8 @@ proc t3d_tri_draw_strip_and_sync*(indexBuff: ptr int16; count: cint)
 ##  which also generates RDP commands will be used. (e.g. RDPQ)
 ##
 
-proc t3d_tri_sync*() {.inline.} =
-  rspq_write(T3D_RSP_ID, T3D_CMD_TRI_SYNC, 0)
+# proc t3d_tri_sync*() {.inline.} =
+#   rspq_write(T3D_RSP_ID, T3D_CMD_TRI_SYNC, 0)
 
 ##
 ##  Directly loads a matrix, overwriting the current stack position.
@@ -495,7 +500,7 @@ proc t3d_vert_load*(vertices: ptr T3DVertPacked; offset: uint32; count: uint32)
 ##  @param color color in RGBA8 format
 ##
 
-proc t3d_light_set_ambient*(color: ptr uint8_t)
+proc t3d_light_set_ambient*(color: ptr uint8)
 ##
 ##  Sets a directional light.
 ##  You can set up to 7 directional lights, the amount can be set with 't3d_light_set_count'.
@@ -506,7 +511,7 @@ proc t3d_light_set_ambient*(color: ptr uint8_t)
 ##  @param dir direction vector
 ##
 
-proc t3d_light_set_directional*(index: cint; color: ptr uint8_t; dir: ptr T3DVec3)
+proc t3d_light_set_directional*(index: cint; color: ptr uint8; dir: ptr T3DVec3)
 ##
 ##  Sets a point light.
 ##  You can set up to 7 point lights, the amount can be set with 't3d_light_set_count'.
@@ -525,7 +530,7 @@ proc t3d_light_set_directional*(index: cint; color: ptr uint8_t; dir: ptr T3DVec
 ##  @param ignoreNormals if true, the light will only check the distance, not the angle (useful for cutouts)
 ##
 
-proc t3d_light_set_point*(index: cint; color: ptr uint8_t; pos: ptr T3DVec3;
+proc t3d_light_set_point*(index: cint; color: ptr uint8; pos: ptr T3DVec3;
                          size: cfloat; ignoreNormals: bool)
 ##
 ##  Sets the amount of active lights (excl. ambient light).
@@ -561,11 +566,11 @@ proc t3d_fog_set_range*(near: cfloat; far: cfloat)
 ##  @param isEnabled
 ##
 
-proc t3d_fog_set_enabled*(isEnabled: bool) {.inline.} =
-  ##  0xB/0xC are the offsets of attributes (color/UV) in a vertex on the RSP side
-  ##  this allows the code to do a branch-less save.
-  ##  0xB points to alpha of the current vertex, 0xC to the UV which get overwritten later
-  rspq_write(T3D_RSP_ID, T3D_CMD_FOG_STATE, if isEnabled: 0x0B else: 0x0C)
+# proc t3d_fog_set_enabled*(isEnabled: bool) {.inline.} =
+#   ##  0xB/0xC are the offsets of attributes (color/UV) in a vertex on the RSP side
+#   ##  this allows the code to do a branch-less save.
+#   ##  0xB points to alpha of the current vertex, 0xC to the UV which get overwritten later
+#   rspq_write(T3D_RSP_ID, T3D_CMD_FOG_STATE, if isEnabled: 0x0B else: 0x0C)
 
 ##
 ##  Packs a floating-point normal into the internal 5.6.5 format.
@@ -669,7 +674,7 @@ proc t3d_state_set_lighting_mode*(mode: T3DLightingMode)
 ##  @param address base RDRAM address
 ##
 
-proc t3d_segment_set*(segmentId: uint8_t; address: pointer)
+proc t3d_segment_set*(segmentId: uint8; address: pointer)
 ##
 ##  Creates a dummy address to be used for vertex/matrix loads.
 ##  This will cause the address in the segment table to be used instead.
@@ -678,7 +683,7 @@ proc t3d_segment_set*(segmentId: uint8_t; address: pointer)
 ##  @return segmented address
 ##
 
-proc t3d_segment_placeholder*(segmentId: uint8_t): pointer {.inline.} =
+proc t3d_segment_placeholder*(segmentId: uint8): pointer {.inline.} =
   return cast[pointer]((uint32)(segmentId shl (8 * 3 + 2)))
 
 ##
@@ -691,7 +696,7 @@ proc t3d_segment_placeholder*(segmentId: uint8_t): pointer {.inline.} =
 ##  @return segmented address
 ##
 
-proc t3d_segment_address*(segmentId: uint8_t; `ptr`: pointer): pointer {.inline.} =
+proc t3d_segment_address*(segmentId: uint8; `ptr`: pointer): pointer {.inline.} =
   return cast[pointer]((PhysicalAddr(`ptr`) or (segmentId shl (8 * 3 + 2))))
 
 ##  Index-buffer helpers:
@@ -754,8 +759,8 @@ proc t3d_vertbuffer_get_color*(vert: ptr T3DVertPacked; idx: cint): ptr uint32 {
 ##  @param idx vertex index
 ##
 
-proc t3d_vertbuffer_get_rgba*(vert: ptr T3DVertPacked; idx: cint): ptr uint8_t {.inline.} =
-  return if (idx and 1): cast[ptr uint8_t](addr(vert[idx div 2].rgbaB)) else: cast[ptr uint8_t](addr(vert[
+proc t3d_vertbuffer_get_rgba*(vert: ptr T3DVertPacked; idx: cint): ptr uint8 {.inline.} =
+  return if (idx and 1): cast[ptr uint8](addr(vert[idx div 2].rgbaB)) else: cast[ptr uint8](addr(vert[
       idx div 2].rgbaA))
 
 ##
