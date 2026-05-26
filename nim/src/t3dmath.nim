@@ -4,14 +4,23 @@
 ##  @file t3dmath.h
 ##
 
+proc fmodf(x: cfloat, y: cfloat): cfloat {.importc: "fmodf".}
+proc sqrtf(x: cfloat): cfloat {.importc: "sqrtf".}
+proc fm_cosf(x: cfloat): cfloat {.importc: "fm_cosf".}
+proc fm_sinf(x: cfloat): cfloat {.importc: "fm_sinf".}
+
 template T3D_DEG_TO_RAD*(deg: untyped): untyped =
   (deg * 0.01745329252f)
 
 template T3D_F32_TO_FIXED*(val: untyped): untyped =
-  (int32_t)((val) * (float)(1 shl 16))
+  (int32)((val) * (float)(1 shl 16))
 
 const
   T3D_PI* = 3.14159265358979f
+
+type
+  color_t {.bycopy.} = object
+    r, g, b, a: uint8
 
 ##  3D float vector
 
@@ -43,13 +52,6 @@ type
     planes*: array[6, T3DVec4]
 
 
-##  @brief Converts a 16.16 fixed-point number to a float
-
-proc s1616_to_float*(partI: int16; partF: uint16): cfloat {.inline.} =
-  var res: cfloat = cast[cfloat](partI)
-  inc(res, cast[int](cast[float](partF) div 65536.f))
-  return res
-
 ##  @brief Interpolates between two floats by 't'
 
 proc t3d_lerp*(a: cfloat; b: cfloat; t: cfloat): cfloat {.inline.} =
@@ -65,35 +67,35 @@ proc t3d_lerp_angle*(a: cfloat; b: cfloat; t: cfloat): cfloat {.inline.} =
 ##  @brief Sets 'res' to 'a + b'
 
 proc t3d_vec3_add*(res: ptr T3DVec3; a: ptr T3DVec3; b: ptr T3DVec3) {.inline.} =
-  res.v[0] = a.v[0] + b.v[0]
-  res.v[1] = a.v[1] + b.v[1]
-  res.v[2] = a.v[2] + b.v[2]
+  res[0] = a[0] + b[0]
+  res[1] = a[1] + b[1]
+  res[2] = a[2] + b[2]
 
 ##  @brief Sets 'res' to 'a + b'
 
 proc t3d_vec3_mul*(res: ptr T3DVec3; a: ptr T3DVec3; b: ptr T3DVec3) {.inline.} =
-  res.v[0] = a.v[0] * b.v[0]
-  res.v[1] = a.v[1] * b.v[1]
-  res.v[2] = a.v[2] * b.v[2]
+  res[0] = a[0] * b[0]
+  res[1] = a[1] * b[1]
+  res[2] = a[2] * b[2]
 
 ##  @brief Sets 'res' to 'a * s'
 
 proc t3d_vec3_scale*(res: ptr T3DVec3; a: ptr T3DVec3; s: cfloat) {.inline.} =
-  res.v[0] = a.v[0] * s
-  res.v[1] = a.v[1] * s
-  res.v[2] = a.v[2] * s
+  res[0] = a[0] * s
+  res[1] = a[1] * s
+  res[2] = a[2] * s
 
 ##  @brief Set 'res' to 'a - b'
 
 proc t3d_vec3_diff*(res: ptr T3DVec3; a: ptr T3DVec3; b: ptr T3DVec3) {.inline.} =
-  res.v[0] = a.v[0] - b.v[0]
-  res.v[1] = a.v[1] - b.v[1]
-  res.v[2] = a.v[2] - b.v[2]
+  res[0] = a[0] - b[0]
+  res[1] = a[1] - b[1]
+  res[2] = a[2] - b[2]
 
 ##  @brief Returns the squared length of 'v'
 
 proc t3d_vec3_len2*(vec: ptr T3DVec3): cfloat {.inline.} =
-  return vec.v[0] * vec.v[0] + vec.v[1] * vec.v[1] + vec.v[2] * vec.v[2]
+  return vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]
 
 ##  @brief Returns the length of 'v'
 
@@ -118,28 +120,28 @@ proc t3d_vec3_norm*(res: ptr T3DVec3) {.inline.} =
   var len: cfloat = sqrtf(t3d_vec3_len2(res))
   if len < 0.0001f:
     len = 0.0001f
-  res.v[0] = res.v[0] / len
-  res.v[1] = res.v[1] / len
-  res.v[2] = res.v[2] / len
+  res[0] = res[0] / len
+  res[1] = res[1] / len
+  res[2] = res[2] / len
 
 ##  @brief Crosses 'a' with 'b' and stores it in 'res'
 
 proc t3d_vec3_cross*(res: ptr T3DVec3; a: ptr T3DVec3; b: ptr T3DVec3) {.inline.} =
-  res.v[0] = a.v[1] * b.v[2] - b.v[1] * a.v[2]
-  res.v[1] = a.v[2] * b.v[0] - b.v[2] * a.v[0]
-  res.v[2] = a.v[0] * b.v[1] - b.v[0] * a.v[1]
+  res[0] = a[1] * b[2] - b[1] * a[2]
+  res[1] = a[2] * b[0] - b[2] * a[0]
+  res[2] = a[0] * b[1] - b[0] * a[1]
 
 ##  @brief Returns the dot product of 'a' and 'b'
 
 proc t3d_vec3_dot*(a: ptr T3DVec3; b: ptr T3DVec3): cfloat {.inline.} =
-  return a.v[0] * b.v[0] + a.v[1] * b.v[1] + a.v[2] * b.v[2]
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
 
 ##  @brief Linearly interpolates between 'a' and 'b' by 't' and stores it in 'res'
 
 proc t3d_vec3_lerp*(res: ptr T3DVec3; a: ptr T3DVec3; b: ptr T3DVec3; t: cfloat) {.inline.} =
-  res.v[0] = a.v[0] + (b.v[0] - a.v[0]) * t
-  res.v[1] = a.v[1] + (b.v[1] - a.v[1]) * t
-  res.v[2] = a.v[2] + (b.v[2] - a.v[2]) * t
+  res[0] = a[0] + (b[0] - a[0]) * t
+  res[1] = a[1] + (b[1] - a[1]) * t
+  res[2] = a[2] + (b[2] - a[2]) * t
 
 ##  @brief Resets a quaternion to the identity quaternion
 
@@ -154,16 +156,16 @@ proc t3d_quat_identity*(quat: ptr T3DQuat) {.inline.} =
 ##
 
 proc t3d_quat_from_euler*(quat: ptr T3DQuat; rotEuler: array[3, cfloat]) {.inline.} =
-  var c1: cfloat = fm_cosf(rotEuler[0] div 2.0f)
-  var s1: cfloat = fm_sinf(rotEuler[0] div 2.0f)
-  var c2: cfloat = fm_cosf(rotEuler[1] div 2.0f)
-  var s2: cfloat = fm_sinf(rotEuler[1] div 2.0f)
-  var c3: cfloat = fm_cosf(rotEuler[2] div 2.0f)
-  var s3: cfloat = fm_sinf(rotEuler[2] div 2.0f)
-  quat.v[0] = c1 * c2 * s3 - s1 * s2 * c3
-  quat.v[1] = s1 * c2 * c3 - c1 * s2 * s3
-  quat.v[2] = c1 * s2 * c3 + s1 * c2 * s3
-  quat.v[3] = c1 * c2 * c3 + s1 * s2 * s3
+  var c1: cfloat = fm_cosf(rotEuler[0] / cast[cfloat](2.0f))
+  var s1: cfloat = fm_sinf(rotEuler[0] / cast[cfloat](2.0f))
+  var c2: cfloat = fm_cosf(rotEuler[1] / cast[cfloat](2.0f))
+  var s2: cfloat = fm_sinf(rotEuler[1] / cast[cfloat](2.0f))
+  var c3: cfloat = fm_cosf(rotEuler[2] / cast[cfloat](2.0f))
+  var s3: cfloat = fm_sinf(rotEuler[2] / cast[cfloat](2.0f))
+  quat[0] = c1 * c2 * s3 - s1 * s2 * c3
+  quat[1] = s1 * c2 * c3 - c1 * s2 * s3
+  quat[2] = c1 * s2 * c3 + s1 * c2 * s3
+  quat[3] = c1 * c2 * c3 + s1 * s2 * s3
 
 ##
 ##  Creates a quaternion from a rotation (radians) around an axis
@@ -174,8 +176,8 @@ proc t3d_quat_from_euler*(quat: ptr T3DQuat; rotEuler: array[3, cfloat]) {.inlin
 
 proc t3d_quat_from_rotation*(quat: ptr T3DQuat; axis: array[3, cfloat];
                             angleRad: cfloat) {.inline.} =
-  var s: cfloat = fm_sinf(angleRad div 2.0f)
-  var c: cfloat = fm_cosf(angleRad div 2.0f)
+  var s: cfloat = fm_sinf(angleRad / 2.0f)
+  var c: cfloat = fm_cosf(angleRad / 2.0f)
   ## !!!Ignored construct:  * quat = ( T3DQuat ) { { axis [ 0 ] * s , axis [ 1 ] * s , axis [ 2 ] * s , c } } ;
   ## Error: expected ';'!!!
 
@@ -189,10 +191,10 @@ proc t3d_quat_from_rotation*(quat: ptr T3DQuat; axis: array[3, cfloat];
 ##
 
 proc t3d_quat_mul*(res: ptr T3DQuat; a: ptr T3DQuat; b: ptr T3DQuat) {.inline.} =
-  res.v[0] = a.v[3] * b.v[0] + a.v[0] * b.v[3] + a.v[1] * b.v[2] - a.v[2] * b.v[1]
-  res.v[1] = a.v[3] * b.v[1] - a.v[0] * b.v[2] + a.v[1] * b.v[3] + a.v[2] * b.v[0]
-  res.v[2] = a.v[3] * b.v[2] + a.v[0] * b.v[1] - a.v[1] * b.v[0] + a.v[2] * b.v[3]
-  res.v[3] = a.v[3] * b.v[3] - a.v[0] * b.v[0] - a.v[1] * b.v[1] - a.v[2] * b.v[2]
+  res[0] = a[3] * b[0] + a[0] * b[3] + a[1] * b[2] - a[2] * b[1]
+  res[1] = a[3] * b[1] - a[0] * b[2] + a[1] * b[3] + a[2] * b[0]
+  res[2] = a[3] * b[2] + a[0] * b[1] - a[1] * b[0] + a[2] * b[3]
+  res[3] = a[3] * b[3] - a[0] * b[0] - a[1] * b[1] - a[2] * b[2]
 
 ##
 ##  Rotates a quaternion around an axis
@@ -218,7 +220,7 @@ proc t3d_quat_rotate_euler*(quat: ptr T3DQuat; axis: array[3, cfloat]; angleRad:
 ##
 
 proc t3d_quat_dot*(a: ptr T3DQuat; b: ptr T3DQuat): cfloat {.inline.} =
-  return a.v[0] * b.v[0] + a.v[1] * b.v[1] + a.v[2] * b.v[2] + a.v[3] * b.v[3]
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3]
 
 ##
 ##  Normalizes a quaternion
@@ -226,13 +228,13 @@ proc t3d_quat_dot*(a: ptr T3DQuat; b: ptr T3DQuat): cfloat {.inline.} =
 ##
 
 proc t3d_quat_normalize*(quat: ptr T3DQuat) {.inline.} =
-  var scale: cfloat = 1.0f div
-      sqrtf(quat.v[0] * quat.v[0] + quat.v[1] * quat.v[1] + quat.v[2] * quat.v[2] +
-      quat.v[3] * quat.v[3])
-  quat.v[0] = quat.v[0] * scale
-  quat.v[1] = quat.v[1] * scale
-  quat.v[2] = quat.v[2] * scale
-  quat.v[3] = quat.v[3] * scale
+  var scale: cfloat = 1.0f /
+      sqrtf(quat[0] * quat[0] + quat[1] * quat[1] + quat[2] * quat[2] +
+      quat[3] * quat[3])
+  quat[0] = quat[0] * scale
+  quat[1] = quat[1] * scale
+  quat[2] = quat[2] * scale
+  quat[3] = quat[3] * scale
 
 ##
 ##  Interpolates between two quaternions using a normalized linear interpolation.
@@ -242,8 +244,8 @@ proc t3d_quat_normalize*(quat: ptr T3DQuat) {.inline.} =
 ##  @param t interpolation factor
 ##
 
-proc t3d_quat_nlerp*(res: ptr T3DQuat; a: ptr T3DQuat; b: ptr T3DQuat; t: cfloat)
-proc t3d_quat_slerp*(res: ptr T3DQuat; a: ptr T3DQuat; b: ptr T3DQuat; t: cfloat)
+proc t3d_quat_nlerp*(res: ptr T3DQuat; a: ptr T3DQuat; b: ptr T3DQuat; t: cfloat) {.importc: "t3d_quat_nlerp".}
+proc t3d_quat_slerp*(res: ptr T3DQuat; a: ptr T3DQuat; b: ptr T3DQuat; t: cfloat) {.importc: "t3d_quat_slerp".}
 ##
 ##  @brief Initializes a matrix to the identity matrix
 ##  @param mat matrix to be changed
@@ -263,65 +265,22 @@ proc t3d_mat4_identity*(mat: ptr T3DMat4) {.inline.} =
 
 proc t3d_mat4_scale*(mat: ptr T3DMat4; scaleX: cfloat; scaleY: cfloat; scaleZ: cfloat) {.
     inline.} =
-  mat.m[0][0] = mat.m[0][0] * scaleX
-  mat.m[0][1] = mat.m[0][1] * scaleX
-  mat.m[0][2] = mat.m[0][2] * scaleX
-  mat.m[0][3] = mat.m[0][3] * scaleX
-  mat.m[1][0] = mat.m[1][0] * scaleY
-  mat.m[1][1] = mat.m[1][1] * scaleY
-  mat.m[1][2] = mat.m[1][2] * scaleY
-  mat.m[1][3] = mat.m[1][3] * scaleY
-  mat.m[2][0] = mat.m[2][0] * scaleZ
-  mat.m[2][1] = mat.m[2][1] * scaleZ
-  mat.m[2][2] = mat.m[2][2] * scaleZ
-  mat.m[2][3] = mat.m[2][3] * scaleZ
+  mat[0][0] = mat[0][0] * scaleX
+  mat[0][1] = mat[0][1] * scaleX
+  mat[0][2] = mat[0][2] * scaleX
+  mat[0][3] = mat[0][3] * scaleX
+  mat[1][0] = mat[1][0] * scaleY
+  mat[1][1] = mat[1][1] * scaleY
+  mat[1][2] = mat[1][2] * scaleY
+  mat[1][3] = mat[1][3] * scaleY
+  mat[2][0] = mat[2][0] * scaleZ
+  mat[2][1] = mat[2][1] * scaleZ
+  mat[2][2] = mat[2][2] * scaleZ
+  mat[2][3] = mat[2][3] * scaleZ
 
-##
-##  Translates a matrix by the given offsets
-##  @param mat result
-##  @param offsetX
-##  @param offsetY
-##  @param offsetZ
-##
 
-proc t3d_mat4_translate*(mat: ptr T3DMat4; offsetX: cfloat; offsetY: cfloat;
-                        offsetZ: cfloat) {.inline.} =
-  inc(mat.m[3][0], offsetX)
-  inc(mat.m[3][1], offsetY)
-  inc(mat.m[3][2], offsetZ)
 
-##
-##  Rotates a matrix around an axis
-##  @param mat result
-##  @param axis axis to rotate around
-##  @param angleRad angle in radians
-##
-
-proc t3d_mat4_rotate*(mat: ptr T3DMat4; axis: ptr T3DVec3; angleRad: cfloat)
-##
-##  Directly constructs a matrix from scale, rotation (quaternion) and translation
-##  For a euler version, see 't3d_mat4_from_srt_euler'.
-##
-##  @param mat result
-##  @param scale scale factors
-##  @param rot rotation quaternion
-##  @param translate offsets
-##
-
-proc t3d_mat4_from_srt*(mat: ptr T3DMat4; scale: array[3, cfloat];
-                       quat: array[4, cfloat]; translate: array[3, cfloat])
-##
-##  Directly constructs a matrix from scale, rotation (euler) and translation
-##  For a quaternion version, see 't3d_mat4_from_srt'.
-##
-##  @param mat
-##  @param scale
-##  @param rot
-##  @param translate
-##
-
-proc t3d_mat4_from_srt_euler*(mat: ptr T3DMat4; scale: array[3, cfloat];
-                             rot: array[3, cfloat]; translate: array[3, cfloat])
+proc t3d_mat4_from_srt_euler*(mat: ptr T3DMat4; scale: array[3, cfloat]; rot: array[3, cfloat]; translate: array[3, cfloat]) {.importc: "t3d_mat4_from_srt_euler".}
 ##
 ##  Constructs a matrix from a direction and up vector.
 ##  This will only create a rotation matrix, the translation part will be identity.
@@ -330,7 +289,7 @@ proc t3d_mat4_from_srt_euler*(mat: ptr T3DMat4; scale: array[3, cfloat];
 ##  @param up up vector
 ##
 
-proc t3d_mat4_rot_from_dir*(mat: ptr T3DMat4; dir: ptr T3DVec3; up: ptr T3DVec3)
+proc t3d_mat4_rot_from_dir*(mat: ptr T3DMat4; dir: ptr T3DVec3; up: ptr T3DVec3) {.importc: "t3d_mat4_rot_from_dir".}
 ##
 ##  Directly constructs a matrix from scale, rotation (euler) and translation
 ##  Same as 't3d_mat4_from_srt_euler', but instead directly writes to a fixed-point matrix.
@@ -340,8 +299,7 @@ proc t3d_mat4_rot_from_dir*(mat: ptr T3DMat4; dir: ptr T3DVec3; up: ptr T3DVec3)
 ##  @param translate
 ##
 
-proc t3d_mat4fp_from_srt_euler*(mat: ptr T3DMat4FP; scale: array[3, cfloat];
-                               rot: array[3, cfloat]; translate: array[3, cfloat])
+proc t3d_mat4fp_from_srt_euler*(mat: ptr T3DMat4FP; scale: array[3, cfloat]; rot: array[3, cfloat]; translate: array[3, cfloat]) {.importc: "t3d_mat4fp_from_srt_euler".}
 ##
 ##  Directly constructs a matrix from scale, rotation (quaternion) and translation
 ##  Same as 't3d_mat4_from_srt', but instead directly writes to a fixed-point matrix.
@@ -351,8 +309,7 @@ proc t3d_mat4fp_from_srt_euler*(mat: ptr T3DMat4FP; scale: array[3, cfloat];
 ##  @param translate
 ##
 
-proc t3d_mat4fp_from_srt*(mat: ptr T3DMat4FP; scale: array[3, cfloat];
-                         rotQuat: array[4, cfloat]; translate: array[3, cfloat])
+proc t3d_mat4fp_from_srt*(mat: ptr T3DMat4FP; scale: array[3, cfloat]; rotQuat: array[4, cfloat]; translate: array[3, cfloat]) {.importc: "t3d_mat4fp_from_srt".}
 ##
 ##  @brief Sets a value in a fixed-point matrix
 ##  @param mat matrix to be changed
@@ -361,46 +318,13 @@ proc t3d_mat4fp_from_srt*(mat: ptr T3DMat4FP; scale: array[3, cfloat];
 ##  @param val value to be set as a float
 ##
 
-proc t3d_mat4fp_set_float*(mat: ptr T3DMat4FP; column: uint32_t; row: uint32_t;
-                          val: cfloat) {.inline.} =
-  var fixed: int32_t = T3D_F32_TO_FIXED(val)
-  mat.m[column].i[row] = (int16)(fixed shr 16)
-  mat.m[column].f[row] = fixed and 0xFFFF
-
-##
-##  Sets the position of a fixed-point matrix.
-##  Note: that this will just set the values without any further checks/calculations.
-##  @param mat matrix to be changed
-##  @param pos position as a float[3]
-##
-
-proc t3d_mat4fp_set_pos*(mat: ptr T3DMat4FP; pos: array[3, cfloat]) {.inline.} =
-  t3d_mat4fp_set_float(mat, 3, 0, pos[0])
-  t3d_mat4fp_set_float(mat, 3, 1, pos[1])
-  t3d_mat4fp_set_float(mat, 3, 2, pos[2])
-
-##
-##  @brief Gets a value from a fixed-point matrix
-##  @param mat matrix to be read
-##  @param y row
-##  @param x column
-##  @return value as a float
-##
-
-proc t3d_mat4fp_get_float*(mat: ptr T3DMat4FP; y: uint32_t; x: uint32_t): cfloat {.inline.} =
-  return s1616_to_float(mat.m[y].i[x], mat.m[y].f[x])
-
-proc t3d_mat4fp_identity*(mat: ptr T3DMat4FP) {.inline.} =
-  ## !!!Ignored construct:  * mat = ( T3DMat4FP ) { { { { 1 , 0 , 0 , 0 } , { 0 , 0 , 0 , 0 } } , { { 0 , 1 , 0 , 0 } , { 0 , 0 , 0 , 0 } } , { { 0 , 0 , 1 , 0 } , { 0 , 0 , 0 , 0 } } , { { 0 , 0 , 0 , 1 } , { 0 , 0 , 0 , 0 } } , } } ;
-  ## Error: expected ';'!!!
-
 ##
 ##  Converts a float matrix to a fixed-point matrix.
 ##  @param matOut result
 ##  @param matIn input
 ##
 
-proc t3d_mat4_to_fixed*(matOut: ptr T3DMat4FP; matIn: ptr T3DMat4)
+proc t3d_mat4_to_fixed*(matOut: ptr T3DMat4FP; matIn: ptr T3DMat4) {.importc: "t3d_mat4_to_fixed".}
 ##
 ##  Converts a float 4x4 matrix to a fixed-point 4x4 matrix.
 ##  The last row of the matrix is assumed to be {0,0,0,1}.
@@ -409,7 +333,7 @@ proc t3d_mat4_to_fixed*(matOut: ptr T3DMat4FP; matIn: ptr T3DMat4)
 ##  @param matIn input
 ##
 
-proc t3d_mat4_to_fixed_3x4*(matOut: ptr T3DMat4FP; matIn: ptr T3DMat4)
+proc t3d_mat4_to_fixed_3x4*(matOut: ptr T3DMat4FP; matIn: ptr T3DMat4) {.importc: "t3d_mat4_to_fixed_3x4".}
 ##
 ##  Constructs a perspective projection matrix
 ##  @param mat result
@@ -419,8 +343,7 @@ proc t3d_mat4_to_fixed_3x4*(matOut: ptr T3DMat4FP; matIn: ptr T3DMat4)
 ##  @param far far plane distance
 ##
 
-proc t3d_mat4_perspective*(mat: ptr T3DMat4; fov: cfloat; aspect: cfloat; near: cfloat;
-                          far: cfloat)
+proc t3d_mat4_perspective*(mat: ptr T3DMat4; fov: cfloat; aspect: cfloat; near: cfloat; far: cfloat) {.importc: "t3d_mat4_perspective".}
 ##
 ##  Constructs an orthographic projection matrix
 ##  @param mat result
@@ -432,8 +355,7 @@ proc t3d_mat4_perspective*(mat: ptr T3DMat4; fov: cfloat; aspect: cfloat; near: 
 ##  @param far far plane distance
 ##
 
-proc t3d_mat4_ortho*(mat: ptr T3DMat4; left: cfloat; right: cfloat; bottom: cfloat;
-                    top: cfloat; near: cfloat; far: cfloat)
+proc t3d_mat4_ortho*(mat: ptr T3DMat4; left: cfloat; right: cfloat; bottom: cfloat; top: cfloat; near: cfloat; far: cfloat) {.importc: "t3d_mat4_ortho".}
 ##
 ##  @brief Creates a look-at matrix from an eye and target vector
 ##  @param mat destination matrix
@@ -442,15 +364,14 @@ proc t3d_mat4_ortho*(mat: ptr T3DMat4; left: cfloat; right: cfloat; bottom: cflo
 ##  @param up camera up vector, expected to be {0,1,0} by default
 ##
 
-proc t3d_mat4_look_at*(mat: ptr T3DMat4; eye: ptr T3DVec3; target: ptr T3DVec3;
-                      up: ptr T3DVec3)
+proc t3d_mat4_look_at*(mat: ptr T3DMat4; eye: ptr T3DVec3; target: ptr T3DVec3; up: ptr T3DVec3) {.importc: "t3d_mat4_look_at".}
 ##
 ##  Extracts the frustum planes from a 4x4 view/camera matrix
 ##  @param frustum result
 ##  @param mat view/camera matrix
 ##
 
-proc t3d_mat4_to_frustum*(frustum: ptr T3DFrustum; mat: ptr T3DMat4)
+proc t3d_mat4_to_frustum*(frustum: ptr T3DFrustum; mat: ptr T3DMat4) {.importc: "t3d_mat4_to_frustum".}
 ##
 ##  Scales a frustum by a given factor.
 ##  This can be used if you need to check scaled objects without having to transform the AABBs
@@ -458,7 +379,7 @@ proc t3d_mat4_to_frustum*(frustum: ptr T3DFrustum; mat: ptr T3DMat4)
 ##  @param scale scale factor (use the same as the model scale)
 ##
 
-proc t3d_frustum_scale*(frustum: ptr T3DFrustum; scale: cfloat)
+proc t3d_frustum_scale*(frustum: ptr T3DFrustum; scale: cfloat) {.importc: "t3d_frustum_scale".}
 ##
 ##  Checks if an AABB is inside a frustum.
 ##  Note that this function *may* choose to return false positives in favor of speed.
@@ -469,7 +390,7 @@ proc t3d_frustum_scale*(frustum: ptr T3DFrustum; scale: cfloat)
 ##  @return true if the AABB is inside the frustum
 ##
 
-proc t3d_frustum_vs_aabb*(frustum: ptr T3DFrustum; min: ptr T3DVec3; max: ptr T3DVec3): bool
+proc t3d_frustum_vs_aabb*(frustum: ptr T3DFrustum; min: ptr T3DVec3; max: ptr T3DVec3): bool {.importc: "t3d_frustum_vs_aabb".}
 ##
 ##  Checks if an s16 AABB is inside a frustum.
 ##  Note that this function *may* choose to return false positives in favor of speed.
@@ -480,8 +401,7 @@ proc t3d_frustum_vs_aabb*(frustum: ptr T3DFrustum; min: ptr T3DVec3; max: ptr T3
 ##  @return true if the AABB is inside the frustum
 ##
 
-proc t3d_frustum_vs_aabb_s16*(frustum: ptr T3DFrustum; min: array[3, int16];
-                             max: array[3, int16]): bool
+proc t3d_frustum_vs_aabb_s16*(frustum: ptr T3DFrustum; min: array[3, int16]; max: array[3, int16]): bool {.importc: "t3d_frustum_vs_aabb_s16".}
 ##
 ##  Checks if a Sphere is inside a frustum.
 ##  Note that this function *may* choose to return false positives in favor of speed.
@@ -492,17 +412,16 @@ proc t3d_frustum_vs_aabb_s16*(frustum: ptr T3DFrustum; min: array[3, int16];
 ##  @return true if the Sphere is inside the frustum
 ##
 
-proc t3d_frustum_vs_sphere*(frustum: ptr T3DFrustum; center: ptr T3DVec3;
-                           radius: cfloat): bool
+proc t3d_frustum_vs_sphere*(frustum: ptr T3DFrustum; center: ptr T3DVec3; radius: cfloat): bool {.importc: "t3d_frustum_vs_sphere".}
 ##  @brief Multiplies the matrices 'matA' and 'matB' and stores it in 'matRes'
 
 proc t3d_mat4_mul*(matRes: ptr T3DMat4; matA: ptr T3DMat4; matB: ptr T3DMat4) {.inline.} =
-  var i: uint32_t = 0
+  var i: uint32 = 0
   while i < 4:
-    var j: uint32_t = 0
+    var j: uint32 = 0
     while j < 4:
-      matRes.m[j][i] = matA.m[0][i] * matB.m[j][0] + matA.m[1][i] * matB.m[j][1] +
-          matA.m[2][i] * matB.m[j][2] + matA.m[3][i] * matB.m[j][3]
+      matRes[j][i] = matA[0][i] * matB[j][0] + matA[1][i] * matB[j][1] +
+          matA[2][i] * matB[j][2] + matA[3][i] * matB[j][3]
       inc(j)
     inc(i)
 
@@ -514,10 +433,10 @@ proc t3d_mat4_mul*(matRes: ptr T3DMat4; matA: ptr T3DMat4; matB: ptr T3DMat4) {.
 ##
 
 proc t3d_mat3_mul_vec3*(vecOut: ptr T3DVec3; mat: ptr T3DMat4; vec: ptr T3DVec3) {.inline.} =
-  var i: uint32_t = 0
+  var i: uint32 = 0
   while i < 3:
-    vecOut.v[i] = mat.m[0][i] * vec.v[0] + mat.m[1][i] * vec.v[1] +
-        mat.m[2][i] * vec.v[2]
+    vecOut[i] = mat[0][i] * vec[0] + mat[1][i] * vec[1] +
+        mat[2][i] * vec[2]
     inc(i)
 
 ##
@@ -529,10 +448,10 @@ proc t3d_mat3_mul_vec3*(vecOut: ptr T3DVec3; mat: ptr T3DMat4; vec: ptr T3DVec3)
 ##
 
 proc t3d_mat4_mul_vec3*(vecOut: ptr T3DVec4; mat: ptr T3DMat4; vec: ptr T3DVec3) {.inline.} =
-  var i: uint32_t = 0
+  var i: uint32 = 0
   while i < 4:
-    vecOut.v[i] = mat.m[0][i] * vec.v[0] + mat.m[1][i] * vec.v[1] +
-        mat.m[2][i] * vec.v[2] + mat.m[3][i]
+    vecOut[i] = mat[0][i] * vec[0] + mat[1][i] * vec[1] +
+        mat[2][i] * vec[2] + mat[3][i]
     inc(i)
 
 ##  C++ wrappers that allow (const-)references to be passed instead of pointers

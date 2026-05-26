@@ -10,6 +10,12 @@ const
 
 var T3D_RSP_ID*: uint32
 
+type
+  color_t {.bycopy.} = object
+    r, g, b, a: uint8
+
+proc malloc_uncached(size: csize_t): ptr {.importc: "malloc_uncached".}
+
 ##  RSP commands, must match with the commands defined in `rsp/rsp_tiny3d.rspl`
 
 type
