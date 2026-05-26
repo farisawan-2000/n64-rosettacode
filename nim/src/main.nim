@@ -1,10 +1,12 @@
 ## ===============================
 ## Whole lot of C glue
 ## ===============================
+import t3d
+
 type
   color_t {.bycopy.} = object
     r, g, b, a: uint8
-  resolution_t {.byref.} = object
+  resolution_t {.bycopy.} = object
     width, height, interlaced: cint
     aspect: cfloat
     overscan: cfloat
@@ -44,6 +46,8 @@ proc display_init(
   filter: cint
 ) {.importc: "display_init".}
 
+proc rdpq_init() {.importc: "rdpq_init".}
+proc malloc_uncached(size: csize_t): ptr {.importc: "malloc_uncached".}
 
 ## ===============================
 ## Now the start of the program
@@ -75,11 +79,11 @@ proc main*(): cint =
   display_init(RESOLUTION_320x240, DEPTH_16_BPP, FB_COUNT, GAMMA_NONE,
                FILTERS_RESAMPLE_ANTIALIAS)
   rdpq_init()
-  t3d_init((T3DInitParams), ())
+  t3d_init(T3DInitParams())
   ##  Now allocate a fixed-point matrix, this is what t3d uses internally.
   ##  Note: this gets DMA'd to the RSP, so it needs to be uncached.
   ##  If you can't allocate uncached memory, remember to flush the cache after writing to it instead.
-  var modelMatFP: ptr T3DMat4FP = malloc_uncached(sizeof((T3DMat4FP) * FB_COUNT))
+  var modelMatFP: ptr T3DMat4FP = cast[ptr T3DMat4FP](malloc_uncached(sizeof(T3DMat4FP) * FB_COUNT))
   ##  allocate one matrix for each framebuffer
   ##  Also create a buffered viewport to have a distinct matrix for each frame, avoiding corruptions if the CPU is too fast
   ##  In an actual game make sure to free this viewport via 't3d_viewport_destroy' if no longer needed.

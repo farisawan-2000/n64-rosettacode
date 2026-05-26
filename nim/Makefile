@@ -26,7 +26,7 @@ NIM_SRCS := $(wildcard src/*.nim)
 
 OBJS := $(C_SRCS:%.c=$(BUILD_DIR)/%.o) $(NIM_SRCS:%.nim=$(BUILD_DIR)/%.o)
 
-nim_INCLUDES += -I/usr/mips64-elf/include/ -Isrc/ -I.
+NIM_INCLUDES += --cincludes:/usr/mips64-elf/include/
 
 NO_WARNINGS := -Wno-unused-const-variable -Wno-incompatible-pointer-types -Wno-unused-but-set-variable -Wno-main -Wno-return-type \
                -Wno-unused-function -Wno-unused-variable
@@ -58,7 +58,7 @@ filesystem/%.t3dm: assets/%.glb
 # Compile nim code
 $(BUILD_DIR)/%.o: %.nim | $(BUILD_DIR)/
 	@echo "    [nim] $@"
-	nim c $<
+	nim c $(NIM_INCLUDES) $<
 	$(CC) -c $(CFLAGS) $(NO_WARNINGS) -o $@ $@.c
 
 $(ROM): N64_ROM_TITLE = "01_model"
