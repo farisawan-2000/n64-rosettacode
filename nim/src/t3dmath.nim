@@ -18,15 +18,15 @@ const
 type
   T3DVec3* = array[3, float]
   T3DVec4* = array[4, float]
-  T3DQuat* = fm_quat_t
-  T3DMat4* = fm_mat4_t
+  T3DQuat* = array[4, float]
+  T3DMat4* = array[4, array[4, float]]
 
 ##  3D s16.16 fixed-point vector, used as-is by the RSP.
 
 type
   T3DVec4FP* {.bycopy.} = object
-    i*: array[4, int16_t]
-    f*: array[4, uint16_t]
+    i*: array[4, int16]
+    f*: array[4, uint16]
 
 
 ##  4x4 Matrix of 16.16 fixed-point numbers, used as-is by the RSP.
@@ -45,9 +45,9 @@ type
 
 ##  @brief Converts a 16.16 fixed-point number to a float
 
-proc s1616_to_float*(partI: int16_t; partF: uint16_t): cfloat {.inline.} =
+proc s1616_to_float*(partI: int16; partF: uint16): cfloat {.inline.} =
   var res: cfloat = cast[cfloat](partI)
-  inc(res, cast[cfloat](partF div 65536.f))
+  inc(res, cast[int](cast[float](partF) div 65536.f))
   return res
 
 ##  @brief Interpolates between two floats by 't'
@@ -364,7 +364,7 @@ proc t3d_mat4fp_from_srt*(mat: ptr T3DMat4FP; scale: array[3, cfloat];
 proc t3d_mat4fp_set_float*(mat: ptr T3DMat4FP; column: uint32_t; row: uint32_t;
                           val: cfloat) {.inline.} =
   var fixed: int32_t = T3D_F32_TO_FIXED(val)
-  mat.m[column].i[row] = (int16_t)(fixed shr 16)
+  mat.m[column].i[row] = (int16)(fixed shr 16)
   mat.m[column].f[row] = fixed and 0xFFFF
 
 ##
@@ -480,8 +480,8 @@ proc t3d_frustum_vs_aabb*(frustum: ptr T3DFrustum; min: ptr T3DVec3; max: ptr T3
 ##  @return true if the AABB is inside the frustum
 ##
 
-proc t3d_frustum_vs_aabb_s16*(frustum: ptr T3DFrustum; min: array[3, int16_t];
-                             max: array[3, int16_t]): bool
+proc t3d_frustum_vs_aabb_s16*(frustum: ptr T3DFrustum; min: array[3, int16];
+                             max: array[3, int16]): bool
 ##
 ##  Checks if a Sphere is inside a frustum.
 ##  Note that this function *may* choose to return false positives in favor of speed.
