@@ -1,37 +1,34 @@
 ## ===============================
 ## Whole lot of C glue
 ## ===============================
-import t3d
-import t3dmath
+import futhark
 
-type color_t {.bycopy.} = object
-    r, g, b, a: uint8
-type resolution_t {.bycopy.} = object
-    width, height, interlaced: cint
-    aspect: cfloat
-    overscan: cfloat
+importc:
+  path "/usr/mips64-elf/include/"
+  define N64
+  undef NDEBUG
+  "libdragon.h"
+  "t3d/t3d.h"
+  "t3d/t3dmath.h"
+  "t3d/t3dmodel.h"
 
-type T3DModel {.incompleteStruct.} = object
-  placeholder: int
+# Tell Nim how to compile against the library. If you have a dynamic library
+# this would simply be a `--passL:"-l<library name>`
+static:
+  writeFile("test.c", """
+  #include "libdragon.h"
+  #include "t3d/t3d.h"
+  #include "t3d/t3dmath.h"
+  #include "t3d/t3dmodel.h"
+  """)
+{.compile: "test.c".}
 
-type rspq_block_t = object
-  placeholder: int
+## ===============================
+## Now the start of the program
+## ===============================
 
 const
   FB_COUNT* = 3
-  DFS_DEFAULT_LOCATION* = 0
-  DEPTH_16_BPP* = 0
-  GAMMA_NONE* = 0
-  FILTERS_RESAMPLE_ANTIALIAS* = 3
-  RESOLUTION_320x240: resolution_t = resolution_t(
-    width: 320, height: 240, interlaced: 0,
-  );
-
-
-proc fm_sinf(val_radians: cfloat): cfloat {.importc: "fm_sinf".}
-proc debug_init_isviewer() {.importc: "debug_init_isviewer".}
-proc debug_init_usblog() {.importc: "debug_init_usblog".}
-proc t3d_init(params: T3DInitParams) {.importc: "t3d_init".}
 
 proc asset_init_compression_lvl2() {.importc: "__asset_init_compression_lvl2".}
 proc asset_init_compression_lvl3() {.importc: "__asset_init_compression_lvl3".}
@@ -41,29 +38,6 @@ proc init_compression(level: int) =
     of 2: asset_init_compression_lvl2()
     of 3: asset_init_compression_lvl3()
     else: discard
-
-
-
-proc dfs_init(location: cint) {.importc: "dfs_init".}
-proc display_init(
-  resolution: resolution_t,
-  depth: cint,
-  fb_count: cint,
-  gamma: cint,
-  filter: cint
-) {.importc: "display_init".}
-
-proc rdpq_init() {.importc: "rdpq_init".}
-proc malloc_uncached(size: csize_t): ptr {.importc: "malloc_uncached".}
-proc free_uncached(pr: ptr) {.importc: "free_uncached".}
-
-proc t3d_model_load(model: string): ptr T3DModel {.importc: "t3d_model_load".}
-
-## ===============================
-## Now the start of the program
-## ===============================
-
-
 
 proc get_rainbow_color*(s: cfloat): color_t =
   var r: cfloat = fm_sinf(s + 0.0f) * 127.0f + 128.0f
@@ -82,10 +56,10 @@ proc get_rainbow_color*(s: cfloat): color_t =
 ##
 
 proc main*(): cint =
-  debug_init_isviewer()
-  debug_init_usblog()
+  # debug_init_isviewer()
+  discard debug_init_usblog()
   init_compression(2)
-  dfs_init(DFS_DEFAULT_LOCATION)
+  discard dfs_init(DFS_DEFAULT_LOCATION)
   display_init(RESOLUTION_320x240, DEPTH_16_BPP, FB_COUNT, GAMMA_NONE,
                FILTERS_RESAMPLE_ANTIALIAS)
   rdpq_init()
@@ -93,7 +67,7 @@ proc main*(): cint =
   ##  Now allocate a fixed-point matrix, this is what t3d uses internally.
   ##  Note: this gets DMA'd to the RSP, so it needs to be uncached.
   ##  If you can't allocate uncached memory, remember to flush the cache after writing to it instead.
-  var modelMatFP: seq[t3dmath.T3DMat4FP] = cast[seq[t3dmath.T3DMat4FP]](malloc_uncached(sizeof(t3dmath.T3DMat4FP) * FB_COUNT))
+  var modelMatFP: seq[T3DMat4FP] = cast[seq[T3DMat4FP]](malloc_uncached(sizeof(T3DMat4FP) * FB_COUNT))
   ##  allocate one matrix for each framebuffer
   ##  Also create a buffered viewport to have a distinct matrix for each frame, avoiding corruptions if the CPU is too fast
   ##  In an actual game make sure to free this viewport via 't3d_viewport_destroy' if no longer needed.

@@ -22,7 +22,7 @@ $(BUILD_DIR)/:
 DUMMY != mkdir -p $(BUILD_DIR)/src
 
 C_SRCS := $(wildcard src/*.c)
-NIM_SRCS := $(wildcard src/test.nim)
+NIM_SRCS := $(wildcard src/main.nim)
 
 OBJS := $(C_SRCS:%.c=$(BUILD_DIR)/%.o) $(NIM_SRCS:%.nim=$(BUILD_DIR)/%.o)
 
@@ -58,7 +58,7 @@ filesystem/%.t3dm: assets/%.glb
 # Compile nim code
 $(BUILD_DIR)/%.o: %.nim | $(BUILD_DIR)/
 	@echo "    [nim] $@"
-	nim c $(NIM_INCLUDES) $<
+	nim c $(NIM_INCLUDES) --maxLoopIterationsVM:100000000 $<
 	$(CC) -c $(CFLAGS) $(NO_WARNINGS) -o $@ $@.c
 
 $(ROM): N64_ROM_TITLE = "01_model"
