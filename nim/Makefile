@@ -22,7 +22,7 @@ $(BUILD_DIR)/:
 DUMMY != mkdir -p $(BUILD_DIR)/src
 
 C_SRCS := $(wildcard src/*.c)
-NIM_SRCS := $(wildcard src/*.nim)
+NIM_SRCS := $(wildcard src/test.nim)
 
 OBJS := $(C_SRCS:%.c=$(BUILD_DIR)/%.o) $(NIM_SRCS:%.nim=$(BUILD_DIR)/%.o)
 
