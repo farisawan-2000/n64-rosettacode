@@ -32,6 +32,8 @@ const
 
 proc asset_init_compression_lvl2() {.importc: "__asset_init_compression_lvl2".}
 proc asset_init_compression_lvl3() {.importc: "__asset_init_compression_lvl3".}
+proc rspq_block_begin() {.importc: "rspq_block_begin".}
+
 proc init_compression(level: int) =
   case level:
     of 0, 1: discard
@@ -49,6 +51,54 @@ proc get_rainbow_color*(s: cfloat): color_t =
     b: cast[uint8](b),
     a: 255
   )
+
+proc RGBA32(rx: uint8, gx: uint8, bx: uint8, ax: uint8): color_t = 
+  result.r = rx
+  result.g = gx
+  result.b = bx
+  result.a = ax
+
+# proc t3d_viewport_create(): T3DViewport =
+#   T3DViewport {
+#     internal_isCamProjDirty: true,
+#     offset: [0, 0],
+#     size: [(int32)display_get_width(), (int32)display_get_height()],
+#     guardBandScale: 2,
+#     useRejection: false,
+#     internal_bufferCount: 0,
+#     internal_matFP: nil,
+#   };
+
+proc t3d_viewport_create_buffered(count: uint16): T3DViewport =
+  result.internal_isCamProjDirty = true
+  result.offset = [int32(0), int32(0)]
+  result.size = [int32(display_get_width()), int32(display_get_height())]
+  result.guardBandScale = cint(2)
+  result.useRejection = 0
+  result.internal_bufferCount = count
+  result.internal_bufferIdx = 0
+  result.internal_matFP = cast[ptr T3DMat4FP](malloc_uncached(sizeof(T3DMat4FP) * 2 * count))
+
+proc t3d_vec3_len2(vec: ptr T3DVec3): float =
+  return (vec.v[0] * vec.v[0]) + (vec.v[1] * vec.v[1]) + (vec.v[2] * vec.v[2])
+
+proc t3d_vec3_norm(res: ptr T3DVec3) =
+  var len = sqrtf(t3d_vec3_len2(res))
+  if (len < 0.0001f):
+    len = 0.0001f
+  res.v[0] /= len
+  res.v[1] /= len
+  res.v[2] /= len
+
+
+proc T3D_DEG_TO_RAD(deg: float): float = (deg * 0.01745329252f)
+
+proc color_to_packed32(c: color_t): uint32 =
+    return (c.r shl 24) or (c.g shl 16) or (c.b shl 8) or c.a;
+
+proc rdpq_fixup_write8_syncchange(a: uint32, b: uint32, c: uint32, d: uint32) {.importc: "__rdpq_fixup_write8_syncchange".}
+proc rdpq_set_prim_color(color: color_t) =
+    rdpq_fixup_write8_syncchange(RDPQ_CMD_SET_PRIM_COLOR_COMPONENT, (0 shl 16), color_to_packed32(color), 0)
 
 ##
 ##  Simple example with a 3d-model file created in blender.
@@ -72,11 +122,11 @@ proc main*(): cint =
   ##  Also create a buffered viewport to have a distinct matrix for each frame, avoiding corruptions if the CPU is too fast
   ##  In an actual game make sure to free this viewport via 't3d_viewport_destroy' if no longer needed.
   var viewport: T3DViewport = t3d_viewport_create_buffered(FB_COUNT)
-  let camPos: T3DVec3 = [0.0, 10.0, 40.0]
-  let camTarget: T3DVec3 = [0, 0, 0]
+  let camPos = T3DVec3(v: [0.0f, 10.0f, 40.0f])
+  let camTarget = T3DVec3(v: [0, 0, 0])
   var colorAmbient: array[4, uint8] = [80, 80, 100, 0xFF]
   var colorDir: array[4, uint8] = [0xEE, 0xAA, 0xAA, 0xFF]
-  var lightDirVec: T3DVec3 = [-1.0, 1.0, 1.0]
+  var lightDirVec = T3DVec3(v: [-1.0, 1.0, 1.0])
   t3d_vec3_norm(addr(lightDirVec))
   ##  Load a model-file, this contains the geometry and some metadata
   var model: ptr T3DModel = t3d_model_load("rom:/model.t3dm")
@@ -88,37 +138,34 @@ proc main*(): cint =
     ##  cycle through FP matrices to avoid overwriting what the RSP may still need to load
     frameIdx = (frameIdx + 1) mod FB_COUNT
     rotAngle -= 0.02f
-    var modelScale: float = 0.1
+    var modelScale: cfloat = 0.1f
     t3d_viewport_set_projection(addr(viewport), T3D_DEG_TO_RAD(85.0f), 10.0f,
                                 150.0f)
 
-    var upvec: T3DVec3 = [0, 1, 0]
+    var upvec = T3DVec3(v: [0, 1, 0])
     t3d_viewport_look_at(addr(viewport), addr(camPos), addr(camTarget),
                          addr(upvec))
     ##  slowly rotate model, for more information on matrices and how to draw objects
     ##  see the example: "03_objects"
-    
-    var modscale: T3DVec3 = [modelScale, modelScale, modelScale]
-    var modrot: T3DVec3 = [0.0, rotAngle * 0.2, rotAngle]
-    var modpos: T3DVec3 = [0, 0, 0]
+
     t3d_mat4fp_from_srt_euler(addr(modelMatFP[frameIdx]),
-                              addr(modscale),
-                              addr(modrot),
-                              addr(modpos))
+                              [modelScale, modelScale, modelScale],
+                              [0.0f, rotAngle * 0.2f, rotAngle],
+                              [0'f32, 0'f32, 0'f32])
     ##  ======== Draw ======== //
     rdpq_attach(display_get(), display_get_zbuf())
     t3d_frame_start()
     t3d_viewport_attach(addr(viewport))
     t3d_screen_clear_color(RGBA32(100, 80, 80, 0xFF))
     t3d_screen_clear_depth()
-    t3d_light_set_ambient(colorAmbient)
-    t3d_light_set_directional(0, colorDir, addr(lightDirVec))
+    t3d_light_set_ambient(addr(colorAmbient[0]))
+    t3d_light_set_directional(0, addr(colorDir[0]), addr(lightDirVec))
     t3d_light_set_count(1)
     ##  you can use the regular rdpq_* functions with t3d.
     ##  In this example, the colored-band in the 3d-model is using the prim-color,
     ##  even though the model is recorded, you change it here dynamically.
     rdpq_set_prim_color(get_rainbow_color(rotAngle * 0.42f))
-    if not dplDraw:
+    if dplDraw != nil:
       rspq_block_begin()
       ##  Draw the model, material settings (e.g. textures, color-combiner) are handled internally
       t3d_model_draw(model)
