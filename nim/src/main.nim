@@ -15,13 +15,13 @@ importc:
 # Tell Nim how to compile against the library. If you have a dynamic library
 # this would simply be a `--passL:"-l<library name>`
 static:
-  writeFile("test.c", """
+  writeFile("build/test.c", """
   #include "libdragon.h"
   #include "t3d/t3d.h"
   #include "t3d/t3dmath.h"
   #include "t3d/t3dmodel.h"
   """)
-{.compile: "test.c".}
+{.compile: "build/test.c".}
 
 ## ===============================
 ## Now the start of the program
